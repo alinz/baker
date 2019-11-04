@@ -1,0 +1,21 @@
+version: "3.5"
+
+services:
+  service1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    ports:
+      - "80:80"
+
+    networks:
+      - baker
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+networks:
+  baker:
+    name: baker_net
+    driver: bridge

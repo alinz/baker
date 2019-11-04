@@ -1,0 +1,21 @@
+version: "3.5"
+
+services:
+  service1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    labels:
+      - "baker.network=baker"
+      - "baker.service.port=8000"
+      - "baker.service.ping=/config"
+      - "baker.service.ssl=false"
+
+    networks:
+      - baker
+
+networks:
+  baker:
+    external:
+      name: baker_net
