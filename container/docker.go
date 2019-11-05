@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/alinz/bake"
-	"github.com/alinz/bake/pkg/endpoint"
+	"github.com/alinz/baker"
+	"github.com/alinz/baker/pkg/endpoint"
 )
 
 type event struct {

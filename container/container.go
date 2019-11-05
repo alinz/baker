@@ -1,7 +1,7 @@
 package container
 
 import (
-	"github.com/alinz/bake"
+	"github.com/alinz/baker"
 )
 
 // Consumer responsbible for consuimg from producer

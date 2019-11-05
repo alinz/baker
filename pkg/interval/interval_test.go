@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alinz/bake/pkg/interval"
+	"github.com/alinz/baker/pkg/interval"
 )
 
 type DummyTickerFn func(ctx context.Context) error

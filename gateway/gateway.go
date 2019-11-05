@@ -1,11 +1,17 @@
 package gateway
 
 import (
+	"bytes"
+	"fmt"
+	"io"
+	"net"
 	"net/http"
 	"sync"
+	"time"
 
-	"github.com/alinz/bake"
-	"github.com/alinz/bake/service"
+	"github.com/alinz/baker"
+	"github.com/alinz/baker/pkg/json"
+	"github.com/alinz/baker/service"
 )
 
 // Services contains collection of same services
@@ -229,7 +235,107 @@ func (s *Handler) Close(err error) {
 }
 
 func (s *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// need to grab Host and Path from reuqest
+	host := r.Host
+	path := r.URL.Path
 
+	paths := s.domains.Paths(host)
+	if paths == nil {
+		json.ResponseAsError(w, http.StatusNotFound, fmt.Errorf("resource or service not found"))
+		return
+	}
+
+	services := paths.Services(path)
+	if services == nil {
+		json.ResponseAsError(w, http.StatusNotFound, fmt.Errorf("resource or service not found"))
+		return
+	}
+
+	service := services.Get()
+	if service == nil {
+		json.ResponseAsError(w, http.StatusNotFound, fmt.Errorf("resource or service not found"))
+		return
+	}
+
+	if !service.Container.Active {
+		json.ResponseAsError(w, http.StatusServiceUnavailable, fmt.Errorf("resource or service is unavailable"))
+		return
+	}
+
+	r.Host = service.Container.Addr.Host()
+	r.URL.Host = r.Host
+	r.RequestURI = ""
+
+	// need to have X-Forwarded-For header
+	// RemoteAddr is cotnains port as well, need to remove port
+	remoteAddr, _, _ := net.SplitHostPort(r.RemoteAddr)
+	r.Header.Set("X-Forwarded-For", remoteAddr)
+
+	resp, err := http.DefaultClient.Do(r)
+	if err != nil {
+		json.ResponseAsError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	// Copy the headers
+	for key, values := range resp.Header {
+		for _, value := range values {
+			w.Header().Set(key, value)
+		}
+	}
+
+	// support stream
+	doneStream := make(chan struct{})
+	go func() {
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			return
+		}
+
+		for {
+			select {
+			case <-time.Tick(10 * time.Millisecond):
+				flusher.Flush()
+			case <-doneStream:
+				return
+			}
+		}
+	}()
+
+	// Trailer support
+	trailers := bytes.Buffer{}
+	firstTrailer := true
+	trailersMap := map[string]string{}
+	for key, values := range resp.Trailer {
+		if !firstTrailer {
+			trailers.WriteString(",")
+		}
+		trailers.WriteString(key)
+		firstTrailer = false
+
+		// saves the trailers key and value for final push
+		for _, value := range values {
+			trailersMap[key] = value
+		}
+	}
+	if trailers.Len() > 0 {
+		// announce trailer's keys
+		w.Header().Set("Trailer", trailers.String())
+	}
+
+	// Copy the status code
+	w.WriteHeader(resp.StatusCode)
+
+	// Copy the body
+	io.Copy(w, resp.Body)
+
+	// Pass the trailers values
+	for key, value := range trailersMap {
+		w.Header().Set(key, value)
+	}
+
+	// signal the stream goroutine to stop flushing
+	close(doneStream)
 }
 
 func NewHandler() *Handler {

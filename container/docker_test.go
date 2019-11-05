@@ -9,8 +9,8 @@ import (
 	"path"
 	"testing"
 
-	"github.com/alinz/bake"
-	"github.com/alinz/bake/container"
+	"github.com/alinz/baker"
+	"github.com/alinz/baker/container"
 )
 
 func mockResponse(t *testing.T, scenario string, r *http.Request) io.ReadCloser {

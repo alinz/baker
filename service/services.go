@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/alinz/bake"
-	"github.com/alinz/bake/container"
-	"github.com/alinz/bake/pkg/interval"
+	"github.com/alinz/baker"
+	"github.com/alinz/baker/container"
+	"github.com/alinz/baker/pkg/interval"
 )
 
 type Consumer interface {

@@ -3,7 +3,7 @@ package endpoint_test
 import (
 	"testing"
 
-	"github.com/alinz/bake/pkg/endpoint"
+	"github.com/alinz/baker/pkg/endpoint"
 )
 
 func TestAddr(t *testing.T) {

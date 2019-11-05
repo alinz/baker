@@ -1,7 +1,7 @@
 package bake
 
 import (
-	"github.com/alinz/bake/pkg/endpoint"
+	"github.com/alinz/baker/pkg/endpoint"
 )
 
 type Config struct {
