@@ -1,0 +1,48 @@
+[
+  {
+    "Id": "service-1",
+    "Names": ["/service1_service1_1"],
+    "Image": "service1:1.0.0",
+    "ImageID": "sha256:5bc28373dc021111c114508e29ee11d33d80c2ed64140f37855a3d54681d0a65",
+    "Command": "/bin/sh -c ./goapp",
+    "Created": 1572628407,
+    "Ports": [],
+    "Labels": {
+      "bake.network": "bake_net",
+      "bake.service.ping": "/config",
+      "bake.service.domain": "localhost",
+      "bake.service.path": "/service1",
+      "bake.service.port": "8000",
+      "bake.service.ssl": "false",
+      "com.docker.compose.config-hash": "e5b80677be3049bf0273a183cc96b05db34eb3b0f6d35b5ca08cea4900377509",
+      "com.docker.compose.container-number": "1",
+      "com.docker.compose.oneoff": "False",
+      "com.docker.compose.project": "service1",
+      "com.docker.compose.service": "service1",
+      "com.docker.compose.version": "1.24.1"
+    },
+    "State": "running",
+    "Status": "Up 1 second",
+    "HostConfig": { "NetworkMode": "bake_net" },
+    "NetworkSettings": {
+      "Networks": {
+        "bake_net": {
+          "IPAMConfig": null,
+          "Links": null,
+          "Aliases": null,
+          "NetworkID": "8467b65fee4143b463630f95654c16c1cf25f791135ade22c15a704597f56617",
+          "EndpointID": "d6fd12ce9302aeba57e44b2dcb2711993f404810d31d3a00f91e556ac0f11700",
+          "Gateway": "172.18.0.1",
+          "IPAddress": "172.18.0.2",
+          "IPPrefixLen": 16,
+          "IPv6Gateway": "",
+          "GlobalIPv6Address": "",
+          "GlobalIPv6PrefixLen": 0,
+          "MacAddress": "02:42:ac:12:00:02",
+          "DriverOpts": null
+        }
+      }
+    },
+    "Mounts": []
+  }
+]

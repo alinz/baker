@@ -17,6 +17,7 @@ type event struct {
 	active bool
 }
 
+// Docker is an implementation of Docker's container producer
 type Docker struct {
 	client *http.Client
 	addr   endpoint.HTTPAddr
@@ -25,6 +26,9 @@ type Docker struct {
 
 var _ Producer = (*Docker)(nil)
 
+// Start starts the process of consuming Docker events and produces container
+// object.
+// NOTE: this method is blocking call
 func (d *Docker) Start(consumer Consumer) {
 	events := make(chan *event, 10)
 	containers := make(chan *bake.Container, 10)
@@ -51,6 +55,8 @@ func (d *Docker) Start(consumer Consumer) {
 	for container := range containers {
 		consumer.Container(container)
 	}
+
+	consumer.Close(nil)
 }
 
 // processRunningContainers will be called at first to make sure running containers
@@ -127,6 +133,8 @@ func (d *Docker) processLiveEvents(events chan<- *event) {
 // in case of any errors, an err value will be set on container object and will be pushed to containers' channel
 // TODO: this method is blocking
 func (d *Docker) eventsToContainers(events <-chan *event, containers chan<- *bake.Container) {
+	defer close(containers)
+
 	for event := range events {
 		// if event is not active, it means container has no longer
 		// exists and there is no need to fetch its data
@@ -216,8 +224,8 @@ var DefaultClient = &http.Client{
 // DefaultAddr is a default docker host and port which communicating with Docker deamon
 const DefaultAddr = "http://localhost"
 
-// New creates a new docker watcher
-func New(client *http.Client, addr string) *Docker {
+// NewDocker creates a new docker watcher
+func NewDocker(client *http.Client, addr string) *Docker {
 	return &Docker{
 		client: client,
 		addr:   endpoint.ParseHTTPAddr(addr),
