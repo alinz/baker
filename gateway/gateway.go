@@ -18,12 +18,12 @@ import (
 // it also implements basic round robin getter
 type Services struct {
 	mux     sync.RWMutex
-	store   []*bake.Service
+	store   []*baker.Service
 	current int
 }
 
 // Get implements basic round robin
-func (s *Services) Get() *bake.Service {
+func (s *Services) Get() *baker.Service {
 	s.mux.RLock()
 	defer s.mux.RUnlock()
 
@@ -37,14 +37,14 @@ func (s *Services) Get() *bake.Service {
 }
 
 // Add a service to pool
-func (s *Services) Add(service *bake.Service) {
+func (s *Services) Add(service *baker.Service) {
 	s.mux.Lock()
 	s.store = append(s.store, service)
 	s.mux.Unlock()
 }
 
 // Remove a service from pool
-func (s *Services) Remove(service *bake.Service) {
+func (s *Services) Remove(service *baker.Service) {
 	s.mux.Lock()
 	for i, serv := range s.store {
 		if serv.Container.ID == service.Container.ID {
@@ -59,7 +59,7 @@ func (s *Services) Remove(service *bake.Service) {
 // NewServices creates services object
 func NewServices() *Services {
 	return &Services{
-		store: make([]*bake.Service, 0),
+		store: make([]*baker.Service, 0),
 	}
 }
 
@@ -67,7 +67,7 @@ func NewServices() *Services {
 type Paths struct {
 	mux        sync.RWMutex
 	store      map[string]*Services
-	id2Service map[string]*bake.Service
+	id2Service map[string]*baker.Service
 }
 
 // Services return services object associate with given path
@@ -85,7 +85,7 @@ func (p *Paths) Services(path string) *Services {
 
 // Add a service to pool of same path
 // NOTE: don't run Remove and Add in separate goroutine
-func (p *Paths) Add(service *bake.Service) {
+func (p *Paths) Add(service *baker.Service) {
 	p.mux.Lock()
 	defer p.mux.Unlock()
 
@@ -108,7 +108,7 @@ func (p *Paths) Add(service *bake.Service) {
 // service might have not have path. in order to find the service
 // Paths uses second id2Service to locate it and pass that
 // NOTE: don't run Remove and Add in separate goroutine
-func (p *Paths) Remove(service *bake.Service) {
+func (p *Paths) Remove(service *baker.Service) {
 	p.mux.Lock()
 	defer p.mux.Unlock()
 
@@ -133,7 +133,7 @@ func (p *Paths) Remove(service *bake.Service) {
 func NewPaths() *Paths {
 	return &Paths{
 		store:      make(map[string]*Services),
-		id2Service: make(map[string]*bake.Service),
+		id2Service: make(map[string]*baker.Service),
 	}
 }
 
@@ -141,7 +141,7 @@ func NewPaths() *Paths {
 type Domains struct {
 	mux        sync.RWMutex
 	store      map[string]*Paths
-	id2Service map[string]*bake.Service
+	id2Service map[string]*baker.Service
 }
 
 // Paths returns Paths object for given domain
@@ -158,7 +158,7 @@ func (d *Domains) Paths(domain string) *Paths {
 }
 
 // Add a service to pool of same domain
-func (d *Domains) Add(service *bake.Service) {
+func (d *Domains) Add(service *baker.Service) {
 	d.mux.Lock()
 	defer d.mux.Unlock()
 
@@ -178,7 +178,7 @@ func (d *Domains) Add(service *bake.Service) {
 }
 
 // Remove a service from pool of same domain
-func (d *Domains) Remove(service *bake.Service) {
+func (d *Domains) Remove(service *baker.Service) {
 	d.mux.Lock()
 	defer d.mux.Unlock()
 
@@ -203,7 +203,7 @@ func (d *Domains) Remove(service *bake.Service) {
 func NewDomains() *Domains {
 	return &Domains{
 		store:      make(map[string]*Paths),
-		id2Service: make(map[string]*bake.Service),
+		id2Service: make(map[string]*baker.Service),
 	}
 }
 
@@ -216,7 +216,7 @@ var _ http.Handler = (*Handler)(nil)
 
 // Service will be called by service.Producer
 // NOTE: do not call this directly
-func (s *Handler) Service(service *bake.Service) error {
+func (s *Handler) Service(service *baker.Service) error {
 	if service.Config == nil || service.Config.Domain == "" {
 		// service needs to be remove from list
 		s.domains.Remove(service)
@@ -235,7 +235,7 @@ func (s *Handler) Close(err error) {
 }
 
 func (s *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// need to grab Host and Path from reuqest
+	// need to grab Host and Path from request
 	host := r.Host
 	path := r.URL.Path
 
@@ -267,8 +267,12 @@ func (s *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.RequestURI = ""
 
 	// need to have X-Forwarded-For header
-	// RemoteAddr is cotnains port as well, need to remove port
-	remoteAddr, _, _ := net.SplitHostPort(r.RemoteAddr)
+	// RemoteAddr contains port as well, need to remove it
+	remoteAddr, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		json.ResponseAsError(w, http.StatusBadRequest, err)
+		return
+	}
 	r.Header.Set("X-Forwarded-For", remoteAddr)
 
 	resp, err := http.DefaultClient.Do(r)
@@ -329,7 +333,7 @@ func (s *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Copy the body
 	io.Copy(w, resp.Body)
 
-	// Pass the trailers values
+	// Pass the trailers values after body
 	for key, value := range trailersMap {
 		w.Header().Set(key, value)
 	}

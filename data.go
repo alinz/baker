@@ -1,4 +1,4 @@
-package bake
+package baker
 
 import (
 	"github.com/alinz/baker/pkg/endpoint"

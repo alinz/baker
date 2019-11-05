@@ -6,7 +6,7 @@ import (
 
 // Consumer responsbible for consuimg from producer
 type Consumer interface {
-	Container(container *bake.Container) error
+	Container(container *baker.Container) error
 	Close(err error)
 }
 

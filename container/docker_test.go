@@ -35,13 +35,13 @@ func mockDockerServer(t *testing.T, scenario string) *httptest.Server {
 }
 
 type DummyConsumer struct {
-	container func(container *bake.Container) error
+	container func(container *baker.Container) error
 	close     func(err error)
 }
 
 var _ (container.Consumer) = (*DummyConsumer)(nil)
 
-func (dc *DummyConsumer) Container(container *bake.Container) error {
+func (dc *DummyConsumer) Container(container *baker.Container) error {
 	return dc.container(container)
 }
 
@@ -65,7 +65,7 @@ func TestDocker(t *testing.T) {
 
 		docker := container.NewDocker(server.Client(), server.URL)
 		docker.Start(&DummyConsumer{
-			container: func(container *bake.Container) error {
+			container: func(container *baker.Container) error {
 				fmt.Println(container)
 				return nil
 			},

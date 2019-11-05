@@ -10,7 +10,7 @@ import (
 )
 
 type ConfigLoader interface {
-	Config(addr endpoint.HTTPAddr) (*bake.Config, error)
+	Config(addr endpoint.HTTPAddr) (*baker.Config, error)
 }
 
 type LoadConfig struct {
@@ -21,7 +21,7 @@ type LoadConfig struct {
 var _ ConfigLoader = (*LoadConfig)(nil)
 
 // Config loads Config object from given address
-func (c *LoadConfig) Config(addr endpoint.HTTPAddr) (*bake.Config, error) {
+func (c *LoadConfig) Config(addr endpoint.HTTPAddr) (*baker.Config, error) {
 	client := c.client
 	if addr.Secure() {
 		client = c.secureClient
@@ -34,7 +34,7 @@ func (c *LoadConfig) Config(addr endpoint.HTTPAddr) (*bake.Config, error) {
 	}
 
 	// decode ping response
-	config := &bake.Config{}
+	config := &baker.Config{}
 	err = json.NewDecoder(resp.Body).Decode(config)
 	if err != nil {
 		return nil, err

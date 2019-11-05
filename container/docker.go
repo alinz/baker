@@ -31,7 +31,7 @@ var _ Producer = (*Docker)(nil)
 // NOTE: this method is blocking call
 func (d *Docker) Start(consumer Consumer) {
 	events := make(chan *event, 10)
-	containers := make(chan *bake.Container, 10)
+	containers := make(chan *baker.Container, 10)
 
 	// Run this in background, this make sures
 	// that events being pushed, can be transformed and
@@ -132,14 +132,14 @@ func (d *Docker) processLiveEvents(events chan<- *event) {
 // eventsToContainers processes all the events and tries to push containers objects to containers channel.
 // in case of any errors, an err value will be set on container object and will be pushed to containers' channel
 // TODO: this method is blocking
-func (d *Docker) eventsToContainers(events <-chan *event, containers chan<- *bake.Container) {
+func (d *Docker) eventsToContainers(events <-chan *event, containers chan<- *baker.Container) {
 	defer close(containers)
 
 	for event := range events {
 		// if event is not active, it means container has no longer
 		// exists and there is no need to fetch its data
 		if !event.active {
-			containers <- &bake.Container{
+			containers <- &baker.Container{
 				ID: event.id,
 			}
 			continue
@@ -148,7 +148,7 @@ func (d *Docker) eventsToContainers(events <-chan *event, containers chan<- *bak
 		addr := d.addr.WithPath("/containers/" + event.id + "/json")
 		resp, err := d.client.Get(addr.String())
 		if err != nil {
-			containers <- &bake.Container{
+			containers <- &baker.Container{
 				ID:  event.id,
 				Err: fmt.Errorf("failed to fetch container '%s' info because %s", event.id, err),
 			}
@@ -160,10 +160,10 @@ func (d *Docker) eventsToContainers(events <-chan *event, containers chan<- *bak
 
 			Config *struct {
 				Labels *struct {
-					Network     string `json:"bake.network"`
-					ServicePort string `json:"bake.service.port"`
-					ServicePing string `json:"bake.service.ping"`
-					ServiceSSL  string `json:"bake.service.ssl"`
+					Network     string `json:"baker.network"`
+					ServicePort string `json:"baker.service.port"`
+					ServicePing string `json:"baker.service.ping"`
+					ServiceSSL  string `json:"baker.service.ssl"`
 				} `json:"Labels"`
 			} `json:"Config"`
 
@@ -176,7 +176,7 @@ func (d *Docker) eventsToContainers(events <-chan *event, containers chan<- *bak
 
 		err = json.NewDecoder(resp.Body).Decode(payload)
 		if err != nil {
-			containers <- &bake.Container{
+			containers <- &baker.Container{
 				ID:  event.id,
 				Err: fmt.Errorf("failed to parse container '%s' payload because %s", event.id, err),
 			}
@@ -185,7 +185,7 @@ func (d *Docker) eventsToContainers(events <-chan *event, containers chan<- *bak
 
 		network, ok := payload.NetworkSettings.Networks[payload.Config.Labels.Network]
 		if !ok {
-			containers <- &bake.Container{
+			containers <- &baker.Container{
 				ID:  event.id,
 				Err: fmt.Errorf("network '%s' not exists in labels", payload.Config.Labels.Network),
 			}
@@ -194,7 +194,7 @@ func (d *Docker) eventsToContainers(events <-chan *event, containers chan<- *bak
 
 		port, err := strconv.ParseInt(payload.Config.Labels.ServicePort, 10, 32)
 		if err != nil {
-			containers <- &bake.Container{
+			containers <- &baker.Container{
 				ID:  event.id,
 				Err: fmt.Errorf("failed to parse port for container '%s' because %s", event.id, err),
 			}
@@ -203,7 +203,7 @@ func (d *Docker) eventsToContainers(events <-chan *event, containers chan<- *bak
 
 		serviceAddr := endpoint.NewAddr(network.IPAddress, int(port), payload.Config.Labels.ServiceSSL == "true")
 
-		containers <- &bake.Container{
+		containers <- &baker.Container{
 			ID:       event.id,
 			Active:   true,
 			Addr:     serviceAddr,
