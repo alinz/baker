@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"strconv"
 
 	"github.com/alinz/baker"
 	"github.com/alinz/baker/pkg/endpoint"
+	"github.com/alinz/baker/pkg/logger"
 )
 
 type event struct {
@@ -54,8 +54,6 @@ func (d *Docker) Start(consumer Consumer) {
 
 	// simply go through each container object and call update
 	for container := range containers {
-		log.Printf("INFO: %v", container)
-
 		consumer.Container(container)
 	}
 
@@ -142,18 +140,23 @@ func (d *Docker) eventsToContainers(events <-chan *event, containers chan<- *bak
 		// if event is not active, it means container has no longer
 		// exists and there is no need to fetch its data
 		if !event.active {
+			logger.Debug("container %s is not active", event.id)
 			containers <- &baker.Container{
 				ID: event.id,
 			}
 			continue
 		}
 
+		logger.Debug("container %s is active", event.id)
+
 		addr := d.addr.WithPath("/containers/" + event.id + "/json")
 		resp, err := d.client.Get(addr.String())
 		if err != nil {
+			logger.Error("fetch container '%s' info because %s", event.id, err)
+
 			containers <- &baker.Container{
 				ID:  event.id,
-				Err: fmt.Errorf("failed to fetch container '%s' info because %s", event.id, err),
+				Err: err,
 			}
 			continue
 		}
@@ -179,15 +182,19 @@ func (d *Docker) eventsToContainers(events <-chan *event, containers chan<- *bak
 
 		err = json.NewDecoder(resp.Body).Decode(payload)
 		if err != nil {
+			logger.Error("failed to parse container %s", event.id)
+
 			containers <- &baker.Container{
 				ID:  event.id,
-				Err: fmt.Errorf("failed to parse container '%s' payload because %s", event.id, err),
+				Err: err,
 			}
 			continue
 		}
 
 		network, ok := payload.NetworkSettings.Networks[payload.Config.Labels.Network]
 		if !ok {
+			logger.Debug("network %s not exisits in label for container %s", payload.Config.Labels.Network, event.id)
+
 			containers <- &baker.Container{
 				ID:  event.id,
 				Err: fmt.Errorf("network '%s' not exists in labels", payload.Config.Labels.Network),
@@ -197,6 +204,8 @@ func (d *Docker) eventsToContainers(events <-chan *event, containers chan<- *bak
 
 		port, err := strconv.ParseInt(payload.Config.Labels.ServicePort, 10, 32)
 		if err != nil {
+			logger.Debug("failed to parse port for container '%s' because %s", event.id, err)
+
 			containers <- &baker.Container{
 				ID:  event.id,
 				Err: fmt.Errorf("failed to parse port for container '%s' because %s", event.id, err),

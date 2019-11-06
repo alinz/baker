@@ -2,13 +2,14 @@ package service
 
 import (
 	"context"
-	"log"
+	"errors"
 	"sync"
 	"time"
 
 	"github.com/alinz/baker"
 	"github.com/alinz/baker/container"
 	"github.com/alinz/baker/pkg/interval"
+	"github.com/alinz/baker/pkg/logger"
 )
 
 // Consumer defines all required method which producer will Call
@@ -69,11 +70,9 @@ func (p *ProduceService) Start(consumer Consumer) {
 			Err:       err,
 		}
 
-		log.Printf("INFO: %v", service)
-
 		err = consumer.Service(service)
 		if err != nil {
-			// TODO log err?
+			logger.Error("failed to call consumer.Service because %s", err)
 		}
 	}
 }
@@ -86,6 +85,8 @@ func (p *ProduceService) Container(container *baker.Container) error {
 
 	if !container.Active {
 		delete(p.table, container.ID)
+		container.Err = errors.New("container is not active")
+		p.containers <- container
 		return nil
 	}
 
@@ -111,6 +112,7 @@ func (p *ProduceService) Tick(ctx context.Context) error {
 	defer p.mux.RUnlock()
 
 	for _, container := range p.table {
+
 		select {
 		case p.containers <- container:
 		case <-ctx.Done():
