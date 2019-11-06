@@ -169,7 +169,7 @@ func (d *Domains) Add(service *baker.Service) {
 	paths, ok := d.store[service.Config.Domain]
 	if !ok {
 		paths = NewPaths()
-		d.store[service.Config.Path] = paths
+		d.store[service.Config.Domain] = paths
 	}
 
 	d.id2Service[service.Container.ID] = service
@@ -236,13 +236,13 @@ func (s *Handler) Close(err error) {
 func (s *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	paths := s.domains.Paths(r.Host)
 	if paths == nil {
-		json.ResponseAsError(w, http.StatusNotFound, fmt.Errorf("resource or service not found"))
+		json.ResponseAsError(w, http.StatusNotFound, fmt.Errorf("resource or service not found on %s", r.Host))
 		return
 	}
 
 	services := paths.Services(r.URL.Path)
 	if services == nil {
-		json.ResponseAsError(w, http.StatusNotFound, fmt.Errorf("resource or service not found"))
+		json.ResponseAsError(w, http.StatusNotFound, fmt.Errorf("resource or service not found on path %s", r.URL.Path))
 		return
 	}
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -53,6 +54,8 @@ func (d *Docker) Start(consumer Consumer) {
 
 	// simply go through each container object and call update
 	for container := range containers {
+		log.Printf("INFO: %v", container)
+
 		consumer.Container(container)
 	}
 

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"log"
 	"sync"
 	"time"
 
@@ -68,6 +69,8 @@ func (p *ProduceService) Start(consumer Consumer) {
 			Err:       err,
 		}
 
+		log.Printf("INFO: %v", service)
+
 		err = consumer.Service(service)
 		if err != nil {
 			// TODO log err?
@@ -124,5 +127,7 @@ func New(configLoader ConfigLoader, pingInterval time.Duration) *ProduceService 
 	return &ProduceService{
 		configLoader: configLoader,
 		pingInterval: pingInterval,
+		table:        make(map[string]*baker.Container, 0),
+		containers:   make(chan *baker.Container),
 	}
 }
