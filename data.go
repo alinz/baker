@@ -2,11 +2,17 @@ package baker
 
 import (
 	"github.com/alinz/baker/pkg/endpoint"
+	"github.com/alinz/baker/rule"
 )
+
+type Rules struct {
+	RequestUpdaters rule.RequestUpdaters `json:"request_updaters"`
+}
 
 type Config struct {
 	Domain string `json:"domain"`
 	Path   string `json:"path"`
+	Rules  Rules  `json:"rules"`
 }
 
 type Container struct {

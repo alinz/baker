@@ -77,6 +77,11 @@ func (s *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	proxy := httputil.NewSingleHostReverseProxy(target)
 
+	// apply all directors
+	for _, requestUpdater := range service.Config.Rules.RequestUpdaters {
+		proxy.Director = requestUpdater.Director(proxy.Director)
+	}
+
 	if service.Container.Addr.Secure() {
 		panic("not implemented yet")
 		// proxy.Transport = nil
