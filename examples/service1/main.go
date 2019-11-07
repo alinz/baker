@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 func main() {
@@ -16,6 +17,7 @@ func main() {
 {
 	"domain": "localhost", 
 	"path": "/service1", 
+	"ready": true,
 	"rules": { 
 		"request_updaters": [
 			{
@@ -28,7 +30,7 @@ func main() {
 	}
 }`)
 			return
-		} else if r.URL.Path == "/service1" {
+		} else if strings.HasPrefix(r.URL.Path, "/service1") {
 			fmt.Fprint(w, "service 1")
 			return
 		}

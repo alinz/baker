@@ -67,6 +67,11 @@ func (s *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !service.Config.Ready {
+		json.ResponseAsError(w, http.StatusTooEarly, fmt.Errorf("resource or service is not ready yet"))
+		return
+	}
+
 	target, err := url.Parse(endpoint.NewHTTPAddr(service.Container.Addr, service.Config.Path).String())
 	if err != nil {
 		json.ResponseAsError(w, http.StatusInternalServerError, err)

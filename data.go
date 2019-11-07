@@ -12,6 +12,7 @@ type Rules struct {
 type Config struct {
 	Domain string `json:"domain"`
 	Path   string `json:"path"`
+	Ready  bool   `json:"ready"`
 	Rules  Rules  `json:"rules"`
 }
 
