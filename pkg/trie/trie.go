@@ -1,30 +1,59 @@
 package trie
 
-import "github.com/alinz/baker"
+type Err string
+
+func (e Err) Error() string {
+	return string(e)
+}
+
+const (
+	ErrNotFound = Err("not found")
+)
+
+type Store interface {
+	Insert(k []byte, val interface{})
+	Remove(k []byte)
+	Search(k []byte) (interface{}, error)
+}
+
+const (
+	wild byte = '*'
+)
 
 type Node struct {
 	children map[byte]*Node
-	value    *baker.Service
+	value    interface{}
+	hasValue bool
+	wild     bool
 }
 
-var _ Trier = (*Node)(nil)
+var _ Store = (*Node)(nil)
 
-func (n *Node) Insert(key []byte, value *baker.Service) {
+func (n *Node) Insert(key []byte, val interface{}) {
 	ok := false
 	curr := n
 	next := curr
 
 	for i := 0; i < len(key); i++ {
-		next, ok = curr.children[key[i]]
+		b := key[i]
+
+		if b == wild {
+			curr.wild = true
+			break
+		}
+
+		next, ok = curr.children[b]
 		if !ok {
 			next = New()
-			curr.children[key[i]] = next
+			curr.children[b] = next
 			curr = next
 		}
+
 		curr = next
 	}
 
-	curr.value = value
+	curr.hasValue = true
+	curr.value = val
 }
 
 func (n *Node) Remove(key []byte) {
@@ -35,6 +64,10 @@ func (n *Node) Remove(key []byte) {
 
 	// create a path for both node and key
 	for i := 0; i < len(key); i++ {
+		if curr.wild {
+			break
+		}
+
 		k := key[i]
 		m, ok := curr.children[k]
 		if !ok {
@@ -48,12 +81,13 @@ func (n *Node) Remove(key []byte) {
 
 	// not found a node
 	// ignore deletion
-	if curr.value == nil {
+	if !curr.hasValue {
 		return
 	}
 
 	// remove the reference to value in the current node
 	curr.value = nil
+	curr.hasValue = false
 
 	// need to traverse back and delete any tracing of node
 	// if there
@@ -69,24 +103,28 @@ func (n *Node) Remove(key []byte) {
 	}
 }
 
-func (n *Node) Search(key []byte) *baker.Service {
+func (n *Node) Search(key []byte) (interface{}, error) {
 	ok := false
 	curr := n
 
 	for i := 0; i < len(key); i++ {
-		curr, ok = curr.children[key[i]]
+		b := key[i]
+
+		if curr.wild {
+			break
+		}
+
+		curr, ok = curr.children[b]
 		if !ok {
-			return nil
+			return nil, ErrNotFound
 		}
 	}
 
-	return curr.value
-}
+	if !curr.hasValue {
+		return nil, ErrNotFound
+	}
 
-type Trier interface {
-	Insert(key []byte, value *baker.Service)
-	Remove(key []byte)
-	Search(key []byte) *baker.Service
+	return curr.value, nil
 }
 
 func New() *Node {

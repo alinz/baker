@@ -3,82 +3,73 @@ package trie_test
 import (
 	"testing"
 
-	"github.com/alinz/baker"
 	"github.com/alinz/baker/pkg/trie"
 )
 
 func TestTrieInsertSearch(t *testing.T) {
-	trie := trie.New()
+	m := trie.New()
 
 	key1 := []byte("apple")
 	key2 := []byte("app")
-	key3 := []byte("appl")
+	key3 := []byte("ap")
+	key4 := []byte("apple*")
 
-	trie.Insert(key1, &baker.Service{})
-	trie.Insert(key2, &baker.Service{})
+	m.Insert(key1, 1)
+	m.Insert(key2, 2)
+	m.Insert(key4, 3)
 
-	value := trie.Search(key1)
-	if value == nil {
-		t.Fatal("value should be there")
+	_, err := m.Search(key1)
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	value = trie.Search(key2)
-	if value == nil {
-		t.Fatal("value should be there")
+	_, err = m.Search(key2)
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	value = trie.Search(key3)
-	if value != nil {
-		t.Fatal("value should not be there")
-	}
-}
-
-func TestTrieRemove(t *testing.T) {
-	trie := trie.New()
-
-	key1 := []byte("apple")
-	key2 := []byte("app")
-
-	trie.Insert(key1, &baker.Service{})
-	trie.Insert(key2, &baker.Service{})
-
-	trie.Remove(key2)
-
-	value := trie.Search(key2)
-	if value != nil {
-		t.Fatal("value should not be there")
+	_, err = m.Search(key3)
+	if err != trie.ErrNotFound {
+		t.Fatalf("should be not found but got %s", err)
 	}
 
-	value = trie.Search(key1)
-	if value == nil {
-		t.Fatal("value should  be there")
+	val1, err := m.Search([]byte("apples"))
+	if err != nil {
+		t.Fatal("should found the wild search")
+	}
+
+	val2, err := m.Search([]byte("apples2222"))
+	if err != nil {
+		t.Fatal("should found the wild search")
+	}
+
+	if val1 != val2 {
+		t.Fatalf("values should be the same for same wild keys")
 	}
 }
 
-func BenchmarkSearch(b *testing.B) {
-	trie := trie.New()
+func TestTrie(t *testing.T) {
+	m := trie.New()
 
-	key1 := []byte("apple")
-	key2 := []byte("app")
-	key3 := []byte("appl")
+	key1 := []byte("/session/*")
+	key2 := []byte("/users/*")
 
-	trie.Insert(key1, &baker.Service{})
-	trie.Insert(key2, &baker.Service{})
+	m.Insert(key1, "session path")
+	m.Insert(key2, "users path")
 
-	for i := 0; i < b.N; i++ {
-		trie.Search(key3)
+	session, err := m.Search([]byte("/session/1"))
+	if err != nil {
+		t.Fatal("failed to grab /session/1")
 	}
-}
 
-func BenchmarkTrie(b *testing.B) {
-	trie := trie.New()
+	if session != "session path" {
+		t.Fatal("not same session object")
+	}
 
-	key1 := []byte("apple")
-	value1 := &baker.Service{}
+	m.Remove(key1)
 
-	for i := 0; i < b.N; i++ {
-		trie.Insert(key1, value1)
-		trie.Search(key1)
-		trie.Remove(key1)
+	_, err = m.Search([]byte("/session/1"))
+	if err != trie.ErrNotFound {
+		t.Fatal("session should not be presented")
 	}
 }

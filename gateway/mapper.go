@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/alinz/baker"
+	"github.com/alinz/baker/pkg/trie"
 )
 
 // Services contains collection of same services
@@ -69,7 +70,7 @@ func NewServices() *Services {
 // Paths contains collection of services belong to particuar path
 type Paths struct {
 	mux        sync.RWMutex
-	store      map[string]*Services
+	store      trie.Store
 	id2Service map[string]*baker.Service
 }
 
@@ -78,12 +79,12 @@ func (p *Paths) Services(path string) *Services {
 	p.mux.RLock()
 	defer p.mux.RUnlock()
 
-	services, ok := p.store[path]
-	if !ok {
+	services, err := p.store.Search([]byte(path))
+	if err != nil {
 		return nil
 	}
 
-	return services
+	return services.(*Services)
 }
 
 // Add a service to pool of same path
@@ -97,14 +98,14 @@ func (p *Paths) Add(service *baker.Service) {
 		return
 	}
 
-	services, ok := p.store[service.Config.Path]
-	if !ok {
+	services, err := p.store.Search([]byte(service.Config.Path))
+	if err == trie.ErrNotFound {
 		services = NewServices()
-		p.store[service.Config.Path] = services
+		p.store.Insert([]byte(service.Config.Path), services)
 	}
 
 	p.id2Service[service.Container.ID] = service
-	services.Add(service)
+	services.(*Services).Add(service)
 }
 
 // Remove service from paths
@@ -121,21 +122,25 @@ func (p *Paths) Remove(service *baker.Service) {
 		return
 	}
 
-	services, ok := p.store[cached.Config.Path]
-	if !ok {
-		// this should not happen
-		// if this happens, Add method must have some serious bug
-		panic("service is not presented in under Paths structure")
+	delete(p.id2Service, service.Container.ID)
+
+	value, err := p.store.Search([]byte(cached.Config.Path))
+	if err != nil {
+		panic(err)
 	}
 
-	delete(p.id2Service, service.Container.ID)
+	services := value.(*Services)
 	services.Remove(cached)
+
+	if len(services.store) == 0 {
+		p.store.Remove([]byte(cached.Config.Path))
+	}
 }
 
 // NewPaths create Paths object
 func NewPaths() *Paths {
 	return &Paths{
-		store:      make(map[string]*Services),
+		store:      trie.New(),
 		id2Service: make(map[string]*baker.Service),
 	}
 }
