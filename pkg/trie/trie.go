@@ -98,9 +98,9 @@ func (n *Node) Remove(key []byte) {
 		if len(child.children) != 0 {
 			return
 		}
-
 		delete(parent.children, keys[i])
 	}
+
 }
 
 func (n *Node) Search(key []byte) (interface{}, error) {

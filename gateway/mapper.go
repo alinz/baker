@@ -80,7 +80,7 @@ func (p *Paths) Services(path string) *Services {
 	defer p.mux.RUnlock()
 
 	services, err := p.store.Search([]byte(path))
-	if err != nil {
+	if err == trie.ErrNotFound {
 		return nil
 	}
 
@@ -98,10 +98,12 @@ func (p *Paths) Add(service *baker.Service) {
 		return
 	}
 
-	services, err := p.store.Search([]byte(service.Config.Path))
+	key := []byte(service.Config.Path)
+
+	services, err := p.store.Search(key)
 	if err == trie.ErrNotFound {
 		services = NewServices()
-		p.store.Insert([]byte(service.Config.Path), services)
+		p.store.Insert(key, services)
 	}
 
 	p.id2Service[service.Container.ID] = service
@@ -124,7 +126,9 @@ func (p *Paths) Remove(service *baker.Service) {
 
 	delete(p.id2Service, service.Container.ID)
 
-	value, err := p.store.Search([]byte(cached.Config.Path))
+	key := []byte(cached.Config.Path)
+
+	value, err := p.store.Search(key)
 	if err != nil {
 		panic(err)
 	}
@@ -133,7 +137,7 @@ func (p *Paths) Remove(service *baker.Service) {
 	services.Remove(cached)
 
 	if len(services.store) == 0 {
-		p.store.Remove([]byte(cached.Config.Path))
+		p.store.Remove(key)
 	}
 }
 

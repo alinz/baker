@@ -73,3 +73,28 @@ func TestTrie(t *testing.T) {
 		t.Fatal("session should not be presented")
 	}
 }
+
+func TestTire2(t *testing.T) {
+	m := trie.New()
+
+	key := []byte("/test")
+
+	m.Insert(key, "hello")
+
+	value, err := m.Search(key)
+	if err == trie.ErrNotFound {
+		t.Fatal(err)
+	}
+
+	if value != "hello" {
+		t.Fatal("value not presented")
+	}
+
+	m.Remove(key)
+
+	value, err = m.Search(key)
+	if err != trie.ErrNotFound {
+		t.Fatalf("should return an error but got this %s", err)
+	}
+
+}
