@@ -78,11 +78,11 @@ func (s *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.Debug("proxied %s%s -> %s", r.Host, r.URL.Path, target)
+	logger.Debug("proxied %s%s -> %s", r.Host, r.URL, target)
 
 	proxy := httputil.NewSingleHostReverseProxy(target)
 
-	// Collect all directors as one wraped one
+	// Collect all directors as one wrapped one
 	director := func(r *http.Request) {}
 	for _, requestUpdater := range service.Config.Rules.RequestUpdaters {
 		director = requestUpdater.Director(director)
@@ -90,13 +90,16 @@ func (s *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	originalDirector := proxy.Director
 	proxy.Director = func(r *http.Request) {
+		logger.Debug("Original Request URL: %s", r.URL)
 		// Need to clear URL.Path to empty as target is already known
 		// Also, NewSingleHostReverseProxy.Director's default
 		// will try to merge target.Path and r.URL.Path
 		r.URL.Path = ""
 		// originalDirector needs to be called first before calling other directors
 		originalDirector(r)
+		logger.Debug("Request URL after applying default director: %s", r.URL)
 		director(r)
+		logger.Debug("Request URL after applying all directors: %s", r.URL)
 	}
 
 	if service.Container.Addr.Secure() {
