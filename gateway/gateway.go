@@ -1,12 +1,14 @@
 package gateway
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 
 	"github.com/alinz/baker"
+	"github.com/alinz/baker/pkg/acme"
 	"github.com/alinz/baker/pkg/endpoint"
 	"github.com/alinz/baker/pkg/json"
 	"github.com/alinz/baker/pkg/logger"
@@ -19,6 +21,18 @@ type Handler struct {
 
 var _ service.Consumer = (*Handler)(nil)
 var _ http.Handler = (*Handler)(nil)
+var _ acme.PolicyManager = (*Handler)(nil)
+
+func (s *Handler) HostPolicy(ctx context.Context, host string) error {
+	logger.Info("checking %s for certificate", host)
+
+	paths := s.domains.Paths(host)
+	if paths == nil {
+		return fmt.Errorf("acme/autocert: only %s host is allowed", host)
+	}
+
+	return nil
+}
 
 // Service will be called by service.Producer
 // NOTE: do not call this directly
