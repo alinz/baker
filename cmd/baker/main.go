@@ -1,8 +1,8 @@
 package main
 
 import (
-	"flag"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/alinz/baker/container"
@@ -13,13 +13,12 @@ import (
 )
 
 func main() {
-	var acmeEnable bool
-	var acmePath string
+	acmeEnable := os.Getenv("ACME") == "true"
+	acmePath := os.Getenv("ACME_PATH")
 
-	flag.BoolVar(&acmeEnable, "acme", false, "enable acme")
-	flag.StringVar(&acmePath, "acme-path", ".", "path for all acme's certificates")
-
-	flag.Parse()
+	if acmePath == "" {
+		acmePath = "."
+	}
 
 	proxy := gateway.NewHandler()
 

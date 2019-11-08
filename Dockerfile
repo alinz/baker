@@ -8,4 +8,8 @@ RUN cd /src && go build -o baker ./cmd/baker/main.go
 FROM alpine
 WORKDIR /app
 COPY --from=build-env /src/baker /app/baker
+
+EXPOSE 80
+EXPOSE 443
+
 ENTRYPOINT ./baker
