@@ -16,14 +16,14 @@ func main() {
 			fmt.Fprint(w, `
 {
 	"domain": "localhost", 
-	"path": "/service1", 
+	"path": "/service1/*", 
 	"ready": true,
 	"rules": { 
 		"request_updaters": [
 			{
 				"name": "replace_path",
 				"search": "/service1",
-				"replace": "/",
+				"replace": "",
 				"times": -1
 			}
 		] 
