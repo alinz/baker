@@ -15,6 +15,7 @@ type PolicyManager interface {
 	HostPolicy(ctx context.Context, host string) error
 }
 
+// Server contains all logic to handle both on port http and https
 type Server struct {
 	httpSrv       *http.Server
 	httpsSrv      *http.Server
@@ -22,8 +23,9 @@ type Server struct {
 	certPath      string
 }
 
-// Start this is a blocking call and it will starts
-// both http and https servers
+// Start starts both http and https servers and initialize acme object
+// NOTE: this methid is a blocking call, either run this as last statement or
+// run it with a go command
 func (s *Server) Start(handler http.Handler) error {
 
 	errChan := make(chan error, 2)
@@ -41,7 +43,7 @@ func (s *Server) Start(handler http.Handler) error {
 
 		s.httpSrv.Handler = manager.HTTPHandler(nil)
 
-		logger.Info("http server is running")
+		logger.Info("acme http server is started")
 
 		select {
 		case errChan <- s.httpSrv.ListenAndServe():
@@ -59,7 +61,7 @@ func (s *Server) Start(handler http.Handler) error {
 		s.httpsSrv.TLSConfig = &tls.Config{GetCertificate: manager.GetCertificate}
 		s.httpsSrv.Handler = handler
 
-		logger.Info("https server is running")
+		logger.Info("acme https server is started")
 
 		select {
 		case errChan <- s.httpsSrv.ListenAndServeTLS("", ""):
@@ -77,6 +79,8 @@ func (s *Server) Start(handler http.Handler) error {
 	case <-httpsCloseSignal:
 	}
 
+	// this makes sure that we will return a value back
+	// and not blocking the call
 	select {
 	case err := <-errChan:
 		return err
@@ -85,6 +89,7 @@ func (s *Server) Start(handler http.Handler) error {
 	}
 }
 
+// NewServer creates acme.Server
 func NewServer(policyManager PolicyManager, certPath string) *Server {
 	return &Server{
 		httpSrv: &http.Server{
