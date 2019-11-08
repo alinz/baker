@@ -72,19 +72,31 @@ func (s *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	target, err := url.Parse(endpoint.NewHTTPAddr(service.Container.Addr, service.Config.Path).String())
+	target, err := url.Parse(endpoint.NewHTTPAddr(service.Container.Addr, r.URL.Path).String())
 	if err != nil {
 		json.ResponseAsError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	logger.Debug("received for %s%s proxied to %s", r.Host, r.URL.Path, target)
+	logger.Debug("proxied %s%s -> %s", r.Host, r.URL.Path, target)
 
 	proxy := httputil.NewSingleHostReverseProxy(target)
 
-	// apply all directors
+	// Collect all directors as one wraped one
+	director := func(r *http.Request) {}
 	for _, requestUpdater := range service.Config.Rules.RequestUpdaters {
-		proxy.Director = requestUpdater.Director(proxy.Director)
+		director = requestUpdater.Director(director)
+	}
+
+	originalDirector := proxy.Director
+	proxy.Director = func(r *http.Request) {
+		// Need to clear URL.Path to empty as target is already known
+		// Also, NewSingleHostReverseProxy.Director's default
+		// will try to merge target.Path and r.URL.Path
+		r.URL.Path = ""
+		// originalDirector needs to be called first before calling other directors
+		originalDirector(r)
+		director(r)
 	}
 
 	if service.Container.Addr.Secure() {
