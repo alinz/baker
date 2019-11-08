@@ -27,10 +27,10 @@ type Docker struct {
 
 var _ Producer = (*Docker)(nil)
 
-// Start starts the process of consuming Docker events and produces container
+// Pipe starts the process of consuming Docker events and produces container
 // object.
 // NOTE: this method is blocking call
-func (d *Docker) Start(consumer Consumer) {
+func (d *Docker) Pipe(consumer Consumer) {
 	events := make(chan *event, 10)
 	containers := make(chan *baker.Container, 10)
 

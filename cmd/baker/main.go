@@ -16,9 +16,9 @@ func main() {
 	serviceProducer := service.New(service.NewConfigLoader(nil), 10*time.Second)
 
 	// container -> service producer -> service
-	go containerProducer.Start(serviceProducer)
+	go containerProducer.Pipe(serviceProducer)
 	// service -> proxy -> create a map
-	go serviceProducer.Start(proxy)
+	go serviceProducer.Pipe(proxy)
 
 	http.ListenAndServe(":80", proxy)
 }

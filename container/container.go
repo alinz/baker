@@ -12,5 +12,5 @@ type Consumer interface {
 
 // Producer produces container and calls Consumer's Container
 type Producer interface {
-	Start(u Consumer)
+	Pipe(u Consumer)
 }

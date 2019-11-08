@@ -20,7 +20,7 @@ type Consumer interface {
 
 // Producer has a simple api to grab the consumer and will call proper methods
 type Producer interface {
-	Start(consumer Consumer)
+	Pipe(consumer Consumer)
 }
 
 // ProduceService is an implementation for Producer, it implements container.Consumer
@@ -37,10 +37,10 @@ var _ Producer = (*ProduceService)(nil)
 var _ container.Consumer = (*ProduceService)(nil)
 var _ interval.Ticker = (*ProduceService)(nil)
 
-// Start will be called by higher implementation which give us
+// Pipe will be called by higher implementation which give us
 // the actual consumer for passing services
 // NOTE: this method is a blocking call
-func (p *ProduceService) Start(consumer Consumer) {
+func (p *ProduceService) Pipe(consumer Consumer) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// interval.Run is a blocking call and needs to be run

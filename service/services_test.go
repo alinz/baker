@@ -54,7 +54,7 @@ func TestServices(t *testing.T) {
 
 	services := service.New(dummyConfigLoader, 1*time.Second)
 
-	go services.Start(consumerFn)
+	go services.Pipe(consumerFn)
 
 	addr := endpoint.NewAddr("0.0.0.0", 8000, false)
 	services.Container(&baker.Container{

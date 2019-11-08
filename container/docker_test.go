@@ -64,7 +64,7 @@ func TestDocker(t *testing.T) {
 		defer server.Close()
 
 		docker := container.NewDocker(server.Client(), server.URL)
-		docker.Start(&DummyConsumer{
+		docker.Pipe(&DummyConsumer{
 			container: func(container *baker.Container) error {
 				fmt.Println(container)
 				return nil
