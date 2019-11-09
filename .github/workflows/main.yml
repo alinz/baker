@@ -22,13 +22,12 @@ jobs:
           DOCKER_SECRET: ${{ secrets.DOCKER_SECRET }}
           GITHUB_DOCKER_SECRET: ${{ secrets.GITHUB_DOCKER_SECRET }}
         run: |
-          docker build -t alinz/baker:latest .
-
           # deploy to docker hub
+          docker build -t alinz/baker:latest .
           echo ${{ secrets.DOCKER_SECRET }} | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
           docker push alinz/baker:latest
 
           # deploy to github package
-          # echo "${{ secrets.DOCKER_PASSWORD }}" | docker login docker.pkg.github.com -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          docker build -t docker.pkg.github.com/alinz/baker/baker:latest .
           echo ${{ secrets.GITHUB_DOCKER_SECRET }}docker login docker.pkg.github.com --username alinz --password-stdin
           docker push docker.pkg.github.com/alinz/baker/baker:latest
