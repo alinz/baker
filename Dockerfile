@@ -2,7 +2,7 @@
 FROM golang:alpine AS build-env
 RUN apk --no-cache add build-base git bzr mercurial gcc
 ADD . /src
-RUN cd /src && go build -o baker ./cmd/baker/main.go 
+RUN cd /src && GOGC=off GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-w -s" -o baker ./cmd/baker/main.go
 
 # final stage
 FROM alpine
