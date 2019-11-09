@@ -16,7 +16,7 @@ jobs:
           ANY_GO_FILES_CHANGED=`git diff-tree --no-commit-id --name-only -r HEAD | grep '.go'`
           if [ -z $ANY_GO_FILES_CHANGED ]
           then
-            exit
+            exit 0
           fi
 
           echo ${{ secrets.DOCKER_SECRET }} | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
