@@ -1,0 +1,12 @@
+# ignoring everything
+*
+
+!cmd/*
+!container/*
+!gateway/*
+!pkg/*
+!rule/*
+!service/*
+!data.go
+!go.mod
+!go.sum

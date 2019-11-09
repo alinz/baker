@@ -37,9 +37,13 @@ func normalizeHost(host string) (string, bool) {
 func (s *Handler) HostPolicy(ctx context.Context, host string) error {
 	logger.Info("checking %s for certificate", host)
 
-	paths := s.domains.Paths(host)
+	// www.example.com not store in domains.Paths
+	// need to remove `www.` from it.
+	h, _ := normalizeHost(host)
+
+	paths := s.domains.Paths(h)
 	if paths == nil {
-		return fmt.Errorf("acme/autocert: only %s host is allowed", host)
+		return fmt.Errorf("acme/autocert: %s is not allowed", host)
 	}
 
 	return nil
@@ -91,6 +95,7 @@ func (s *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if !service.Config.IncludeWWW && hasWWW {
 		logger.Debug("service '%s%s' not supported www subdomain", service.Config.Domain, service.Config.Path)
+		logger.Debug("service configured include_www to %t and hasWWW is %t", service.Config.IncludeWWW, hasWWW)
 		json.ResponseAsError(w, http.StatusNotFound, errors.New("resource or service not found"))
 		return
 	}

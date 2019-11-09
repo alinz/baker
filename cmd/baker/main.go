@@ -13,11 +13,16 @@ import (
 )
 
 func main() {
-	acmeEnable := os.Getenv("ACME") == "true"
-	acmePath := os.Getenv("ACME_PATH")
+	acmeEnable := os.Getenv("BAKER_ACME") == "true"
+	acmePath := os.Getenv("BAKER_ACME_PATH")
+	debugLevel := os.Getenv("BAKER_DEBUG_LEVEL") == "true"
 
 	if acmePath == "" {
 		acmePath = "."
+	}
+
+	if debugLevel {
+		logger.Level = logger.DEBUG_LEVEL
 	}
 
 	proxy := gateway.NewHandler()

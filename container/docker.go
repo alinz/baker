@@ -132,7 +132,7 @@ func (d *Docker) processLiveEvents(events chan<- *event) {
 
 // eventsToContainers processes all the events and tries to push containers objects to containers channel.
 // in case of any errors, an err value will be set on container object and will be pushed to containers' channel
-// TODO: this method is blocking
+// NOTE: this method is blocking
 func (d *Docker) eventsToContainers(events <-chan *event, containers chan<- *baker.Container) {
 	defer close(containers)
 
