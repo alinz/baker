@@ -2,10 +2,12 @@ package gateway
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
 
 	"github.com/alinz/baker"
 	"github.com/alinz/baker/pkg/acme"
@@ -22,6 +24,15 @@ type Handler struct {
 var _ service.Consumer = (*Handler)(nil)
 var _ http.Handler = (*Handler)(nil)
 var _ acme.PolicyManager = (*Handler)(nil)
+
+func normalizeHost(host string) (string, bool) {
+	hasWWW := false
+	if strings.HasPrefix(host, "www.") {
+		hasWWW = true
+		host = strings.Replace(host, "www.", "", 1)
+	}
+	return host, hasWWW
+}
 
 func (s *Handler) HostPolicy(ctx context.Context, host string) error {
 	logger.Info("checking %s for certificate", host)
@@ -58,9 +69,11 @@ func (s *Handler) Close(err error) {
 }
 
 func (s *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	paths := s.domains.Paths(r.Host)
+	host, hasWWW := normalizeHost(r.Host)
+
+	paths := s.domains.Paths(host)
 	if paths == nil {
-		json.ResponseAsError(w, http.StatusNotFound, fmt.Errorf("resource or service not found on %s", r.Host))
+		json.ResponseAsError(w, http.StatusNotFound, fmt.Errorf("resource or service not found on %s", host))
 		return
 	}
 
@@ -72,7 +85,13 @@ func (s *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	service := services.Get()
 	if service == nil {
-		json.ResponseAsError(w, http.StatusNotFound, fmt.Errorf("resource or service not found"))
+		json.ResponseAsError(w, http.StatusNotFound, errors.New("resource or service not found"))
+		return
+	}
+
+	if !service.Config.IncludeWWW && hasWWW {
+		logger.Debug("service '%s%s' not supported www subdomain", service.Config.Domain, service.Config.Path)
+		json.ResponseAsError(w, http.StatusNotFound, errors.New("resource or service not found"))
 		return
 	}
 

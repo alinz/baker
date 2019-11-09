@@ -17,6 +17,7 @@ func main() {
 {
 	"domain": "localhost", 
 	"path": "/service1/*", 
+	"IncludeWWW": false,
 	"ready": true,
 	"rules": { 
 		"request_updaters": [

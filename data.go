@@ -10,10 +10,11 @@ type Rules struct {
 }
 
 type Config struct {
-	Domain string `json:"domain"`
-	Path   string `json:"path"`
-	Ready  bool   `json:"ready"`
-	Rules  Rules  `json:"rules"`
+	Domain     string `json:"domain"`
+	IncludeWWW bool   `json:"include_www"`
+	Path       string `json:"path"`
+	Ready      bool   `json:"ready"`
+	Rules      Rules  `json:"rules"`
 }
 
 type Container struct {
