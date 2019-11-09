@@ -13,6 +13,6 @@ jobs:
           DOCKER_LOGIN: ${{ secrets.DOCKER_LOGIN }}
           DOCKER_SECRET: ${{ secrets.DOCKER_SECRET }}
         run: |
-          docker echo ${{ secrets.DOCKER_SECRET }} | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
+          echo ${{ secrets.DOCKER_SECRET }} | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
           docker build -t alinz/baker:latest .
           docker push alinz/baker:latest
