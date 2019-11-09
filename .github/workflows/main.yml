@@ -29,5 +29,5 @@ jobs:
 
           # deploy to github package
           docker build -t docker.pkg.github.com/alinz/baker/baker:latest .
-          echo ${{ secrets.GITHUB_DOCKER_SECRET }}docker login docker.pkg.github.com --username alinz --password-stdin
+          echo ${{ secrets.GITHUB_DOCKER_SECRET }} | docker login docker.pkg.github.com --username alinz --password-stdin
           docker push docker.pkg.github.com/alinz/baker/baker:latest
