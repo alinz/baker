@@ -3,6 +3,14 @@ on:
   push:
     branches:
       - master
+    paths:
+      - '**/*.yml'
+      - '**/*.go'
+      - 'Dockerfile'
+      - 'go.mod'
+      - 'go.sum'
+    paths-ignore:
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,11 +21,13 @@ jobs:
           DOCKER_LOGIN: ${{ secrets.DOCKER_LOGIN }}
           DOCKER_SECRET: ${{ secrets.DOCKER_SECRET }}
         run: |
-          ANY_GO_FILES_CHANGED=`git diff-tree --no-commit-id --name-only -r HEAD | grep '.go'`
-          if ! [ -z $ANY_GO_FILES_CHANGED ]
-          then
-            # run this code, if and only if any go file has chnaged
-            echo ${{ secrets.DOCKER_SECRET }} | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
-            docker build -t alinz/baker:latest .
-            docker push alinz/baker:latest
-          fi
+          docker build -t alinz/baker:latest .
+
+          # deploy to docker hub
+          echo ${{ secrets.DOCKER_SECRET }} | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
+          docker push alinz/baker:latest
+
+          # deploy to github package
+          # echo "${{ secrets.DOCKER_PASSWORD }}" | docker login docker.pkg.github.com -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          docker login docker.pkg.github.com --username alinz
+          docker push docker.pkg.github.com/alinz/baker/baker:latest
