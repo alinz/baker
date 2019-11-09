@@ -14,11 +14,10 @@ jobs:
           DOCKER_SECRET: ${{ secrets.DOCKER_SECRET }}
         run: |
           ANY_GO_FILES_CHANGED=`git diff-tree --no-commit-id --name-only -r HEAD | grep '.go'`
-          if [ -z $ANY_GO_FILES_CHANGED ]
+          if ! [ -z $ANY_GO_FILES_CHANGED ]
           then
-            exit 0
+            # run this code, if and only if any go file has chnaged
+            echo ${{ secrets.DOCKER_SECRET }} | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
+            docker build -t alinz/baker:latest .
+            docker push alinz/baker:latest
           fi
-
-          echo ${{ secrets.DOCKER_SECRET }} | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
-          docker build -t alinz/baker:latest .
-          docker push alinz/baker:latest
