@@ -136,6 +136,11 @@ func (s *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// originalDirector needs to be called first before calling other directors
 		originalDirector(r)
 		logger.Debug("Request URL after applying default director: %s", r.URL)
+
+		// for some reasons, original director inside NewSingleHostReverseProxy add extra /
+		// there is no point to have that so in this section, we are removing it
+		r.URL.Path = strings.TrimSuffix(r.URL.Path, "/")
+
 		director(r)
 		logger.Debug("Request URL after applying all directors: %s", r.URL)
 	}
